@@ -47,7 +47,7 @@ services:
       - traefik_net                      # Connect craneoperator service to traefik network.
     env_file: .env_craneoperator
     deploy:
-      labels:                   # Traefik configuration. Add service only for craneoperator UI exposed port 80.
+      labels:                            # Traefik configuration. Add service only for craneoperator UI exposed port 80.
         - "craneoperator.description=craneoperator"
         - "traefik.enable=true"
         - "traefik.http.routers.craneoperator-router.entrypoints=web"
