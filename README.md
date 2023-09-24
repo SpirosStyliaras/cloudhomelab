@@ -5,14 +5,13 @@
 
 </td></tr></table>
 
-Docker compose files for setting up a small home cloud lab including various applications:
-* Docker Registry witht Craneoperator
+Docker compose files for setting up a small home cloud lab consisting of the following applications:
+* Docker Registry witht Crane Operator
 * Portainer for Docker Swarm
 * Traefik
 
-
 # Traefik proxy installation
-Install Traefik first as it will be used as reverse proxy for the UI of our deployed docker services.
+Install Traefik first as it will be used as reverse proxy for the UI of the deployed docker services.
 ```
 cd docker-traefik && docker stack deploy --compose-file docker-compose.yml traefik
 ```
@@ -24,7 +23,7 @@ cd docker-registry && docker stack deploy --compose-file docker-compose.yml dock
 ```
 
 # Portainer installation
-Install Portainer CE:
+Install Portainer CE as Docker Swarm Management dashboard:
 ```
 cd docker-portainer && docker stack deploy --compose-file <(docker-compose --env-file .env_portainer_agent config) portainer
 ```
