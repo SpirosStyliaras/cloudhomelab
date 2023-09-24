@@ -1,0 +1,75 @@
+# =============================================================
+#
+#	TRAEFIK - reverse proxy
+#
+# =============================================================
+
+
+version: "3.9"
+
+services:
+  traefik:
+    labels:
+      description: "Traefik Reverse Proxy"
+    image: "traefik:v2.6"
+    command:
+      - "--log.level=DEBUG"
+      - "--log.filepath=/var/log/traefik.log"
+      # - "--accesslog.filepath=/var/log/access.log"
+      # - "--accesslog.fields.headers.defaultmode=keep"
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--serverstransport.maxidleconnsperhost=50"
+      - "--serverstransport.forwardingtimeouts.dialtimeout=50"
+      - "--serverstransport.forwardingtimeouts.responseHeaderTimeout=50"
+      - "--serverstransport.forwardingtimeouts.idleConnTimeout=50"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.transport.lifecycle.gracetimeout=50"
+      - "--entrypoints.web.transport.lifecycle.requestacceptgracetimeout=50"
+      - "--entrypoints.web.transport.respondingtimeouts.readtimeout=50"
+      - "--entrypoints.web.transport.respondingtimeouts.writetimeout=50"
+      - "--entrypoints.web.transport.respondingtimeouts.idletimeout=50"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.network=traefik-net"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.swarmmode=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.swarmmoderefreshseconds=20"
+    hostname: traefik
+    ports:
+      - target: 80         # Endpoint exposed port.
+        published: 80
+        protocol: tcp
+        mode: ingress
+      - target: 8080       # UI exposed port.
+        published: 8080
+        protocol: tcp
+        mode: ingress
+    networks:
+      - traefik_net
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # - "./traefik.yml:/etc/traefik/traefik.yml:ro"       # Traefik static configuration file. Use only in Standalone Docker
+    deploy:
+      labels:
+        traefik.description: "Traefik"
+      endpoint_mode: vip
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role == manager]      # Deploy Traefik service on manager nodes only.
+
+networks:                  # traefik network. All Docker services managed by traefik should
+  traefik_net:             # be connected to this network.
+    name: traefik-net
+    driver: overlay
+    external: false        # Not created outside compose.
+    attachable: true       # Enable manual container attachment.
+    internal: false        
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.31.0.0/16

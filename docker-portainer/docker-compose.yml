@@ -1,0 +1,74 @@
+# =============================================================
+#
+#	Portainer - Docker Management UI
+#
+# =============================================================
+
+
+version: "3.9"
+
+services:
+  portainer:
+    labels:
+      description: "Portainer"
+    image: portainer/portainer-ce:2.11.1
+    hostname: portainer
+    networks:
+      - traefik_net       # Connect portainer service to traefik network.
+      - portainer_net     # Connect to portainer network for connectivity with portainer agent.
+    command: -H tcp://$AGENT_CLUSTER_ADDR:9001 --tlsskipverify   # The AGENT_CLUSTER_ADDR should be the name of the agent service prefixed with "tasks.".
+    volumes:
+      - portainer_data:/data
+    deploy:
+      labels:             # Traefik configuration. Add service only for portainer UI exposed port 9000.
+        - "portainer.description=Portainer"
+        - "traefik.enable=true"
+        - "traefik.http.routers.portainer-router.entrypoints=web"
+        - "traefik.http.routers.portainer-router.rule=Host(`portainer.spiros-desktop`)"
+        - "traefik.http.services.portainer-service.loadbalancer.server.port=9000"
+        - "traefik.http.routers.portainer-router.service=portainer-service"
+      endpoint_mode: vip
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+      placement:
+        constraints: [node.role == manager]      # Deploy portainer service on manager nodes only.
+
+  agent:        # portainer agent
+    labels:
+      description: "Portainer Agent"
+    image: portainer/agent:2.11.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - portainer_net     # Connect to portainer network for connectivity with portainer.
+    env_file:
+      - .env_portainer_agent
+    deploy:
+      labels:
+        agent.description: "Portainer Agent"
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]  # Deploy service on linux nodes only.
+
+networks:
+  portainer_net:
+    name: portainer-net
+    driver: overlay
+    external: false
+    attachable: true
+    internal: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.29.0.0/16
+
+  traefik_net:
+    external: true
+    name: traefik-net
+
+volumes:
+  portainer_data:
+    name: portainer_data_vol

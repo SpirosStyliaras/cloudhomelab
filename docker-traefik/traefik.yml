@@ -1,0 +1,95 @@
+# ========================================================================================
+#
+#	TRAEFIK - Static Configuration
+#
+# WARNING: Do not use this file in Swarm mode. This file can be mounted to docker container
+# using bind mounts. If you bind mount a host path into your service’s containers, the path
+# must exist on every swarm node.
+#
+# Parameters description (some):
+# 
+# Refer to Traefik CLI Static Configuration Reference for all possible parameters:
+# https://doc.traefik.io/traefik/reference/static-configuration/cli/
+#
+# serversTransport.maxIdleConnsPerHost:
+# Maximum idle (keep-alive) connections per host.
+#
+# serversTransport.forwardingTimeouts.dialTimeout:
+# Maximum duration allowed for a connection to a backend server to be established.
+#
+# serversTransport.forwardingTimeouts.responseHeaderTimeout:
+# The amount of time to wait for a server's response headers.
+#
+# serversTransport.forwardingTimeouts.idleConnTimeout:
+# Maximum amount of time an idle connection will remain idle before closing itself.
+#
+# entryPoints.<entrypoint-name>.transport.lifecycle.gracetimeout:
+# Duration to give active requests a chance to finish before Traefik stops.
+#
+# entryPoints.<entrypoint-name>.transport.lifecycle.requestAcceptGraceTimeout:
+# Duration to keep accepting requests before Traefik initiates the graceful shutdown 
+# procedure.
+#
+# entryPoints.<entrypoint-name>.transport.respondingTimeouts.readTimeout:
+# Maximum duration for reading the entire request, including the body. 
+#
+# entryPoints.<entrypoint-name>.transport.respondingTimeouts.writeTimeout:
+# Maximum duration before timing out writes of the response.
+#
+# entryPoints.<entrypoint-name>.transport.respondingTimeouts.idleTimeout:
+# Maximum amount duration an idle (keep-alive) connection will remain idle before closing
+# itself.
+#
+# providers.docker.exposedByDefault:
+# Expose containers by default.
+# 
+# providers.docker.network:
+# Default docker network to use for connections to all containers
+#
+# providers.docker.watch:
+# Watch Docker Swarm events.
+#
+# provider.docker.swarmMode:
+# When Docker on Swarm Mode.
+#
+# provider.docker.swarmmoderefreshseconds:
+# Polling interval for swarm mode.
+#
+# ========================================================================================
+
+log:
+  level: DEBUG
+  filePath: "/var/log/traefik.log"
+# accessLog:
+#   filePath: "/var/log/access.log"
+#   fields:
+#     headers:
+#       defaultMode: true  
+api:
+  insecure: true
+  dashboard: true
+serversTransport:
+  maxIdleConnsPerHost: 50
+  forwardingTimeouts:
+    dialTimeout: 50
+    responseHeaderTimeout: 50
+    idleConnTimeout: 50
+entryPoints:
+  web:
+    address: ":80"
+    transport:
+      lifeCycle:
+        gracetimeout: 50
+        requestAcceptGraceTimeout: 50
+      respondingTimeouts:
+        readTimeout: 50
+        writeTimeout: 50
+        idleTimeout: 50 
+providers:
+  docker:
+    endpoint: "tcp://maas-machine-3:2376"
+    network: traefik_net
+    exposedByDefault: false
+    swarmMode: true
+    watch: true
+    swarmmoderefreshseconds: 20

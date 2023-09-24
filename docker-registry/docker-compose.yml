@@ -1,0 +1,81 @@
+# =============================================================
+#
+#	Docker Registry - Docker Images Storage
+#
+# Craneoperator - Docker Registry Management UI
+#
+# =============================================================
+
+
+version: "3.9"
+
+services:
+  registry:
+    labels:
+      description: "Docker Registry"
+    image: registry:2
+    hostname: registry.spiros-desktop
+    networks:
+      - registry
+    ports:
+      - target: 5000
+        published: 5000
+        protocol: tcp
+        mode: ingress
+    env_file: .env_registry
+    volumes:
+      - registry_data:/var/lib/registry  # Named volume mounted 
+      - ./registry_auth:/auth            # Host path mounted volume
+    deploy:
+      labels:
+        registry.spiros-desktop.description: "Docker Registry"
+      endpoint_mode: vip
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+
+  craneoperator:
+    labels:
+      description: "Web UI viewer of private Docker Registry"
+    depends_on:
+      - registry
+    image: parabuzzle/craneoperator:latest
+    hostname: craneoperator
+    networks:
+      - registry
+      - traefik_net                      # Connect craneoperator service to traefik network.
+    env_file: .env_craneoperator
+    deploy:
+      labels:                   # Traefik configuration. Add service only for craneoperator UI exposed port 80.
+        - "craneoperator.description=craneoperator"
+        - "traefik.enable=true"
+        - "traefik.http.routers.craneoperator-router.entrypoints=web"
+        - "traefik.http.routers.craneoperator-router.rule=Host(`craneoperator.spiros-desktop`)"
+        - "traefik.http.services.craneoperator-service.loadbalancer.server.port=80"
+        - "traefik.http.routers.craneoperator-router.service=craneoperator-service"
+      endpoint_mode: vip
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: any
+
+volumes:
+  registry_data:
+    name: registry_data_vol
+
+networks:
+  registry:
+    name: registry-net
+    driver: overlay
+    external: false
+    attachable: true
+    internal: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.0.0/16
+
+  traefik_net:
+    external: true
+    name: traefik-net
